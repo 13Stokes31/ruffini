@@ -11,8 +11,9 @@
 //
 //  Unlike a sign/variation table, this actually COMPUTES: you pass the
 //  coefficients and the root, and it does the arithmetic AND draws it. All
-//  arithmetic is EXACT (rational): pass fractional values as strings, e.g.
-//  "1/3", and they stay exact and render as fractions.
+//  arithmetic is EXACT (rational). Ordinary fractions work as bare numbers
+//  (`1/3` is recovered exactly); unusual ones (large denominators) must be passed
+//  as strings like "7/99991" — a bare one then errors instead of guessing wrong.
 //
 //  No dependencies (native `table`). Public API in English; the few rendered
 //  words are localizable via `lang` ("en" default, "es"). The polynomial's
@@ -39,21 +40,50 @@
   (calc.quo(n, g), calc.quo(d, g))
 }
 
+// Recover the simplest fraction behind a float via continued fractions, so a
+// value written as a bare number (e.g. `1/3`, which Typst evaluates to a float
+// 0.333…) is turned back into the exact fraction. Bounded denominator: if the
+// value needs a bigger one (an unusual fraction), it errors and asks for the
+// string form — it never silently returns a wrong fraction.
+#let _float-to-frac(x) = {
+  let maxden = 10000
+  let tol = 1e-9
+  let neg = x < 0
+  let a = calc.abs(x)
+  if calc.abs(a - calc.round(a)) < tol { return ((if neg { -1 } else { 1 }) * calc.round(a), 1) }
+  let h1 = 1; let h2 = 0 // numerators   h_{i-1}, h_{i-2}
+  let k1 = 0; let k2 = 1 // denominators k_{i-1}, k_{i-2}
+  let b = a
+  let bn = 0; let bd = 1; let ok = false
+  let iter = 0
+  while iter < 40 {
+    iter += 1
+    let ai = calc.floor(b)
+    let h0 = ai * h1 + h2
+    let k0 = ai * k1 + k2
+    if k0 > maxden { break }
+    bn = h0; bd = k0
+    if calc.abs(h0 / k0 - a) < tol { ok = true; break }
+    let fr = b - ai
+    if fr < 1e-12 { ok = true; break }
+    b = 1 / fr
+    h2 = h1; h1 = h0
+    k2 = k1; k1 = k0
+  }
+  if not ok and calc.abs(bn / bd - a) >= tol {
+    panic("ruffini: cannot represent " + repr(x) + " as a simple fraction — pass it as a string, e.g. \"1/3\".")
+  }
+  _mkfrac((if neg { -1 } else { 1 }) * bn, bd)
+}
+
 // Coerce an input value to a reduced fraction. Accepts:
 //   · int              → exact
-//   · "a/b" or "a" str → exact (use this for rationals like "1/3")
-//   · float            → best-effort for terminating decimals (0.5 → 1/2)
+//   · "a/b" or "a" str → exact (ALWAYS use this for unusual fractions like "3/7")
+//   · float            → recovered exactly for simple fractions; errors (asking
+//                        for the string form) if it would need a large denominator
 #let _tofrac(v) = {
   let t = type(v)
-  if t == int { (v, 1) } else if t == float {
-    let s = str(v)
-    if "." in s {
-      let p = s.split(".")
-      let den = 1
-      for _ in range(p.at(1).len()) { den *= 10 }
-      _mkfrac(int(p.at(0) + p.at(1)), den)
-    } else { (int(v), 1) }
-  } else if t == str {
+  if t == int { (v, 1) } else if t == float { _float-to-frac(v) } else if t == str {
     let s = v.replace(" ", "")
     if "/" in s { let p = s.split("/"); _mkfrac(int(p.at(0)), int(p.at(1))) } else { (int(s), 1) }
   } else { panic("ruffini: unsupported number " + repr(v)) }
@@ -137,9 +167,10 @@
 ///
 /// - coefficients (array): P(x)'s coefficients, highest degree first. Include
 ///   zeros for missing terms, e.g. `x^3 - 2x^2 + 1` → `(1, -2, 0, 1)`. Each entry
-///   is an integer, or a string fraction like `"1/2"` / `"-3/4"`.
+///   is a number (ordinary fractions like `1/2` are recovered exactly) or, for an
+///   unusual fraction, a string like `"7/99991"`.
 /// - root (int, str): the `a` in the divisor `(x - a)`. For `(x + 3)`, pass `-3`;
-///   for a rational root, pass a string like `"1/3"`.
+///   for a rational root, `1/3` works, or `"7/99991"` for an unusual one.
 /// - lang (str): language of the rendered words, `"en"` (default) or `"es"`.
 /// - variable (str): the polynomial's variable in the rendered labels (default `"x"`).
 /// - color (color): accent color for the rule and the remainder box.

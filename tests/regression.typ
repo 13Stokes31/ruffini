@@ -75,3 +75,13 @@
 
 // 17. factor with variable `z`
 #ruffini-factor((1, -6, 11, -6), (1, 2, 3), variable: "z")
+#pagebreak()
+
+// 18. bare-number fraction recovered exactly: root 1/3 (Typst → 0.333…) → ⅓
+#ruffini((1, 0, -3), 1/3)
+#pagebreak()
+
+// 19. unusual fraction passed as a string stays exact
+#ruffini((1, 0, -3), "1/99991", highlight-remainder: false)
+// NOTE: `#ruffini((1, 0, -3), 1/99991)` (bare) is EXPECTED to error, on purpose —
+// the denominator is too large to recover from a float; use the string form.

@@ -37,14 +37,39 @@ terms: `x³ − 2x² + 1` → `(1, -2, 0, 1)`.
 **Divisor convention:** `root` is the `a` in `(x − a)`. To divide by `(x + 3)`,
 pass `root: -3`.
 
-**Exact fractions.** Arithmetic is exact (rational), not floating-point. Pass any
-non-integer value **as a string** so it stays exact and renders as a fraction —
-`"1/3"`, `"-3/4"`, both for `root` and inside `coefficients`. (Writing `1/3`
-directly would be evaluated to `0.333…` by Typst before the package sees it.)
+### Fractions
 
-```typ
-#ruffini((2, -1, -1), "-1/2")   // divide by (x + 1/2); shows −1/2 as a fraction
-```
+Arithmetic is **exact** (rational), not floating-point, and fractions render as
+fractions. You can write them two ways:
+
+- **As a plain number** — works for ordinary fractions, whose value the package
+  recovers exactly (even repeating decimals like `1/3`):
+
+  ```typ
+  #ruffini((2, -1, -1), 1/2)      // root 1/2   → shows ½
+  #ruffini((1, 0, -3), 1/3)       // root 1/3   → shows ⅓, exact
+  #ruffini((0.25, 0.5, -1), 0.5)  // decimals too → ¼, ½
+  ```
+
+- **As a string** (in quotes) — **always exact, no matter how unusual** the
+  fraction. Both for `root` and inside `coefficients`:
+
+  ```typ
+  #ruffini(("1/2", "1/4", "-1/4"), "1/2")   // fractional coefficients + root
+  ```
+
+> ⚠️ **Use quotes for unusual fractions.** A bare number goes through Typst's
+> floating-point first, so a fraction with a **large denominator** cannot be
+> recovered — the package then **stops with a clear error** telling you to quote
+> it (it never guesses a wrong fraction). Rule of thumb: **ordinary fractions
+> (`1/2`, `2/3`, `5/6`, `1/12`…) work as bare numbers; anything exotic
+> (`7/99991`, `355/113`…) must be a string** (`"7/99991"`). When in doubt, quote
+> it — the string form is always exact.
+>
+> ```typ
+> #ruffini((1, 0, -3), 1/99991)      // ✗ error: pass it as a string, e.g. "1/3"
+> #ruffini((1, 0, -3), "1/99991")    // ✓ exact
+> ```
 
 **Variable.** The rendered labels use `x` by default; pass `variable: "t"` (or any
 letter) to write `C(t)`, `P(z)`, `(t − 2)`, …
@@ -56,8 +81,8 @@ One division `P(x) ÷ (x − root)`, rendered as the three-row tableau
 
 | Parameter             | Default      | Meaning |
 |-----------------------|--------------|---------|
-| `coefficients`        | *(required)* | Array, highest degree first, zeros included. Ints or string fractions (`"1/2"`). |
-| `root`                | *(required)* | The `a` in `(x − a)`. Int, or a string fraction like `"1/3"`. |
+| `coefficients`        | *(required)* | Array, highest degree first, zeros included. Numbers, or string fractions for unusual ones (see [Fractions](#fractions)). |
+| `root`                | *(required)* | The `a` in `(x − a)`. A number (`-3`, `1/2`), or a string for unusual fractions (`"7/99991"`). |
 | `lang`                | `"en"`       | Language of the rendered words: `"en"` or `"es"`. |
 | `variable`            | `"x"`        | The polynomial's variable in the rendered labels. |
 | `color`               | blue         | Accent color of the L-rule and the remainder box. |
@@ -91,7 +116,7 @@ factor of degree ≥ 2 remains, shows it in parentheses — e.g.
 | Exact division | Remainder `0`, boxed; quotient shown. |
 | **Nonzero remainder** | Boxed remainder; `R = …` in the result line. |
 | Missing terms | Handled via the explicit zero coefficients you pass. |
-| **Fractional root / coefficients** | Exact rational arithmetic; rendered as fractions (pass them as strings). |
+| **Fractional root / coefficients** | Exact rational arithmetic; rendered as fractions. Bare numbers for ordinary fractions, strings for unusual ones. |
 | Leading coefficient ≠ 1 | Preserved through the staircase and in the factorization. |
 | **Irreducible quotient** | `ruffini-factor` stops and shows `(…)` for the remaining factor. |
 | Supplied value is not a root | `ruffini-factor` reports "not an exact division". |
