@@ -26,8 +26,9 @@ Known limits and possible improvements. Nothing here blocks ordinary use.
 - **Trail + fractions** — the fixed-height trail cells can crowd tall fractions;
   it is tuned for integer coefficients.
 
-## Before publishing to Typst Universe
+## Publishing to Typst Universe
 
 - [x] Confirm the name `ruffini` is free in the index.
-- [ ] Final visual pass on the gallery images.
-- [ ] Submit a PR to `typst/packages` (`packages/preview/ruffini/0.1.0/`).
+- [x] Final visual pass on the gallery images.
+- [x] Submit a PR to `typst/packages`: https://github.com/typst/packages/pull/5342
+      (Lint / Test / package check all green; awaiting human review).
