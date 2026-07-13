@@ -10,10 +10,13 @@
 //        optional factorization line.
 //
 //  Unlike a sign/variation table, this actually COMPUTES: you pass the
-//  coefficients and the root, and it does the arithmetic AND draws it.
+//  coefficients and the root, and it does the arithmetic AND draws it. All
+//  arithmetic is EXACT (rational): pass fractional values as strings, e.g.
+//  "1/3", and they stay exact and render as fractions.
 //
 //  No dependencies (native `table`). Public API in English; the few rendered
-//  words are localizable via `lang` ("en" default, "es").
+//  words are localizable via `lang` ("en" default, "es"). The polynomial's
+//  variable is `x` by default; change it with `variable`.
 //
 //  Divisor convention: `root` is the number `a` in the divisor `(x - a)`.
 //  To divide by (x + 3), pass `root: -3`.
@@ -21,28 +24,68 @@
 
 #let _blue = rgb("#2e5fa3")
 
-// Format a number: integers as integers, otherwise rounded to 2 decimals.
-#let _fmt-num(v) = {
-  let r = calc.round(v, digits: 2)
-  if calc.abs(r) < 1e-9 { r = 0 }
-  if calc.round(r) == r { str(calc.round(r)) } else { str(r) }
+// ---- exact rational numbers: (num, den), den > 0, always reduced ------------
+
+#let _gcd(a, b) = {
+  a = calc.abs(a); b = calc.abs(b)
+  while b != 0 { let t = calc.rem(a, b); a = b; b = t }
+  if a == 0 { 1 } else { a }
 }
 
-// A number as math content (proper minus sign, no trailing ".0").
-#let _mnum(v) = eval(_fmt-num(v), mode: "math")
+#let _mkfrac(n, d) = {
+  assert(d != 0, message: "ruffini: zero denominator")
+  if d < 0 { n = -n; d = -d }
+  let g = _gcd(n, d)
+  (calc.quo(n, g), calc.quo(d, g))
+}
 
-// A polynomial (coefficients highest-degree first) as math content.
+// Coerce an input value to a reduced fraction. Accepts:
+//   · int              → exact
+//   · "a/b" or "a" str → exact (use this for rationals like "1/3")
+//   · float            → best-effort for terminating decimals (0.5 → 1/2)
+#let _tofrac(v) = {
+  let t = type(v)
+  if t == int { (v, 1) } else if t == float {
+    let s = str(v)
+    if "." in s {
+      let p = s.split(".")
+      let den = 1
+      for _ in range(p.at(1).len()) { den *= 10 }
+      _mkfrac(int(p.at(0) + p.at(1)), den)
+    } else { (int(v), 1) }
+  } else if t == str {
+    let s = v.replace(" ", "")
+    if "/" in s { let p = s.split("/"); _mkfrac(int(p.at(0)), int(p.at(1))) } else { (int(s), 1) }
+  } else { panic("ruffini: unsupported number " + repr(v)) }
+}
+
+#let _fadd(x, y) = _mkfrac(x.at(0) * y.at(1) + y.at(0) * x.at(1), x.at(1) * y.at(1))
+#let _fmul(x, y) = _mkfrac(x.at(0) * y.at(0), x.at(1) * y.at(1))
+#let _fzero(f) = f.at(0) == 0
+#let _fone(f) = f.at(0) == 1 and f.at(1) == 1
+
+// A fraction's MAGNITUDE as a math string fragment: "3" or "frac(1, 2)".
+#let _fabs-str(f) = {
+  let n = calc.abs(f.at(0))
+  if f.at(1) == 1 { str(n) } else { "frac(" + str(n) + ", " + str(f.at(1)) + ")" }
+}
+
+// A signed fraction as math content.
+#let _fnum(f) = eval((if f.at(0) < 0 { "-" } else { "" }) + _fabs-str(f), mode: "math")
+
+// A polynomial (fraction coefficients, highest degree first) as math content.
 // Powers are always braced (`x^(10)`) so degrees ≥ 10 render correctly.
 #let _poly(coeffs, var: "x") = {
   let deg = coeffs.len() - 1
   let terms = ()
   for (i, c) in coeffs.enumerate() {
-    if c == 0 { continue }
+    if _fzero(c) { continue }
     let p = deg - i
-    let mag = calc.abs(c)
-    let coef = if p == 0 { _fmt-num(mag) } else if mag == 1 { "" } else { _fmt-num(mag) }
+    let mag = (calc.abs(c.at(0)), c.at(1))
+    let is-one = mag.at(0) == 1 and mag.at(1) == 1
+    let coef = if p == 0 { _fabs-str(mag) } else if is-one { "" } else { _fabs-str(mag) }
     let power = if p == 0 { "" } else if p == 1 { var } else { var + "^(" + str(p) + ")" }
-    terms.push((neg: c < 0, body: coef + power))
+    terms.push((neg: c.at(0) < 0, body: coef + power))
   }
   if terms.len() == 0 { return $0$ }
   let s = ""
@@ -55,8 +98,8 @@
 }
 
 // A monic linear factor "(x - r)" as a math string (used to build factorizations).
-#let _linfac(r) = {
-  if r == 0 { "x" } else if r < 0 { "(x + " + _fmt-num(calc.abs(r)) + ")" } else { "(x - " + _fmt-num(r) + ")" }
+#let _linfac(r, var: "x") = {
+  if _fzero(r) { var } else if r.at(0) < 0 { "(" + var + " + " + _fabs-str(r) + ")" } else { "(" + var + " - " + _fabs-str(r) + ")" }
 }
 
 // Pad a row of cells to `width` with empty cells.
@@ -66,16 +109,16 @@
   r
 }
 
-// One synthetic division of `coeffs` by `(x - a)`.
+// One synthetic division of fraction `coeffs` by `(x - a)` (a a fraction).
 // Returns (products, results): `results` is the quotient's coefficients followed
 // by the remainder; `products.at(i)` sits under `coeffs.at(i + 1)`.
 #let _divide(coeffs, a) = {
   let results = (coeffs.at(0),)
   let products = ()
   for i in range(1, coeffs.len()) {
-    let p = a * results.at(i - 1)
+    let p = _fmul(a, results.at(i - 1))
     products.push(p)
-    results.push(coeffs.at(i) + p)
+    results.push(_fadd(coeffs.at(i), p))
   }
   (products, results)
 }
@@ -90,12 +133,15 @@
 /// first, INCLUDING zeros for missing terms) by the binomial `(x - root)`.
 ///
 /// Renders the classic three-row tableau and, by default, a line with the
-/// quotient and remainder.
+/// quotient and remainder. Arithmetic is exact — pass rationals as strings.
 ///
 /// - coefficients (array): P(x)'s coefficients, highest degree first. Include
-///   zeros for missing terms, e.g. `x^3 - 2x^2 + 1` → `(1, -2, 0, 1)`.
-/// - root (number): the `a` in the divisor `(x - a)`. For `(x + 3)`, pass `-3`.
+///   zeros for missing terms, e.g. `x^3 - 2x^2 + 1` → `(1, -2, 0, 1)`. Each entry
+///   is an integer, or a string fraction like `"1/2"` / `"-3/4"`.
+/// - root (int, str): the `a` in the divisor `(x - a)`. For `(x + 3)`, pass `-3`;
+///   for a rational root, pass a string like `"1/3"`.
 /// - lang (str): language of the rendered words, `"en"` (default) or `"es"`.
+/// - variable (str): the polynomial's variable in the rendered labels (default `"x"`).
 /// - color (color): accent color for the rule and the remainder box.
 /// - show-result (bool): append the "quotient / remainder" line (default `true`).
 /// - highlight-remainder (bool): box the remainder cell (default `true`).
@@ -103,6 +149,7 @@
   coefficients,
   root,
   lang: "en",
+  variable: "x",
   color: _blue,
   show-result: true,
   highlight-remainder: true,
@@ -110,17 +157,20 @@
   assert(type(coefficients) == array and coefficients.len() >= 2,
     message: "ruffini: `coefficients` must be an array of at least two numbers (highest degree first).")
   let S = _i18n.at(lang, default: _i18n.en)
+  let V = eval(variable, mode: "math")
   let width = coefficients.len() + 1
 
-  let (products, results) = _divide(coefficients, root)
+  let cf = coefficients.map(_tofrac)
+  let a = _tofrac(root)
+  let (products, results) = _divide(cf, a)
   let quotient = results.slice(0, -1)
   let remainder = results.at(-1)
 
   // three rows -------------------------------------------------------------
-  let row-coeffs = _pad(([],) + coefficients.map(_mnum), width)
-  let row-prod = _pad((_mnum(root), []) + products.map(_mnum), width)
+  let row-coeffs = _pad(([],) + cf.map(_fnum), width)
+  let row-prod = _pad((_fnum(a), []) + products.map(_fnum), width)
   let row-res = ([],) + results.enumerate().map(((i, b)) => {
-    let m = _mnum(b)
+    let m = _fnum(b)
     if highlight-remainder and i == results.len() - 1 {
       table.cell(stroke: 0.7pt + color, m) // remainder cell, boxed by the table itself
     } else { m }
@@ -141,8 +191,8 @@
 
   if show-result {
     align(center, block(above: 8pt, [
-      #S.quotient $C(x) = #_poly(quotient)$ \
-      #S.remainder $R = #_mnum(remainder)$
+      #S.quotient $C(#V) = #_poly(quotient, var: variable)$ \
+      #S.remainder $R = #_fnum(remainder)$
     ]))
   }
 }
@@ -152,8 +202,11 @@
 /// division is exact, a factorization line.
 ///
 /// - coefficients (array): P(x)'s coefficients, highest degree first (with zeros).
-/// - roots (array): the successive values `a` to divide by, in order.
+///   Integers or string fractions like `"1/2"`.
+/// - roots (array): the successive values `a` to divide by, in order (ints or
+///   string fractions).
 /// - lang (str): `"en"` (default) or `"es"`.
+/// - variable (str): the polynomial's variable (default `"x"`).
 /// - color (color): accent color for the rules.
 /// - show-result (bool): append the factorization line (default `true`).
 /// - highlight-remainder (bool): box each division's remainder cell (default `true`).
@@ -161,6 +214,7 @@
   coefficients,
   roots,
   lang: "en",
+  variable: "x",
   color: _blue,
   show-result: true,
   highlight-remainder: true,
@@ -170,21 +224,23 @@
   assert(type(roots) == array and roots.len() >= 1,
     message: "ruffini-factor: `roots` must be a non-empty array.")
   let S = _i18n.at(lang, default: _i18n.en)
+  let V = eval(variable, mode: "math")
   let width = coefficients.len() + 1
+  let rts = roots.map(_tofrac)
 
-  let cells = _pad(([],) + coefficients.map(_mnum), width)
+  let cells = _pad(([],) + coefficients.map(_tofrac).map(_fnum), width)
   let hlines = ()
   let row = 1 // next row index to be written
 
-  let current = coefficients
+  let current = coefficients.map(_tofrac)
   let remainders = ()
-  for r in roots {
+  for r in rts {
     let L = current.len()
     let (products, results) = _divide(current, r)
-    cells += _pad((_mnum(r), []) + products.map(_mnum), width) // product row
+    cells += _pad((_fnum(r), []) + products.map(_fnum), width) // product row
     row += 1
     let res-row = ([],) + results.enumerate().map(((i, b)) => {
-      let m = _mnum(b)
+      let m = _fnum(b)
       if highlight-remainder and i == results.len() - 1 {
         table.cell(stroke: 0.7pt + color, m) // this division's remainder, boxed
       } else { m }
@@ -208,21 +264,21 @@
   ))
 
   if show-result {
-    let exact = remainders.all(v => calc.abs(v) < 1e-9)
+    let exact = remainders.all(_fzero)
     let line = if not exact {
       [#S.factorization #S.not-exact]
     } else {
       // Monic factors (x - r) for each root applied; the final quotient `current`
       // carries P's leading coefficient (division by monic binomials preserves it).
-      let factors = roots.slice(0, remainders.len()).map(_linfac).join("")
+      let factors = rts.slice(0, remainders.len()).map(r => _linfac(r, var: variable)).join("")
       if current.len() == 1 {
         // fully factored into linear factors; `current` is the leading constant
         let lead = current.at(0)
-        let head = if lead == 1 { "" } else { _fmt-num(lead) + " " }
-        [#S.factorization $ P(x) = #eval(head + factors, mode: "math") $]
+        let head = if _fone(lead) { "" } else { (if lead.at(0) < 0 { "-" } else { "" }) + _fabs-str(lead) + " " }
+        [#S.factorization $P(#V) = #eval(head + factors, mode: "math")$]
       } else {
         // an irreducible-here quotient remains
-        [#S.factorization $ P(x) = #eval(factors, mode: "math") (#_poly(current)) $]
+        [#S.factorization $P(#V) = #eval(factors, mode: "math") (#_poly(current, var: variable))$]
       }
     }
     align(center, block(above: 8pt, line))

@@ -29,6 +29,13 @@ Then check, page by page:
 - [ ] **Inexact** (a supplied value is not a root) — line reads "not an exact
   division (nonzero remainder)".
 - [ ] **Factor + Spanish** — Factorización.
+- [ ] **Fractional root** (`"-1/2"`) — the root and results render as real stacked
+  fractions; arithmetic is exact (remainder `0`, not `0.0…`).
+- [ ] **Fractional coefficients** (`"1/2", 0, "-1/3"`) — quotient `½x + ½`,
+  remainder `⅙`, all exact.
+- [ ] **Factor with a fractional root** — `P(x) = 2(x + ½)(x − 1)`.
+- [ ] **Custom variable** (`variable: "t"` / `"z"`) — `C(t)`, `P(z)` and the
+  factors use the given letter.
 
 ## Gallery
 

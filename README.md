@@ -37,6 +37,18 @@ terms: `x³ − 2x² + 1` → `(1, -2, 0, 1)`.
 **Divisor convention:** `root` is the `a` in `(x − a)`. To divide by `(x + 3)`,
 pass `root: -3`.
 
+**Exact fractions.** Arithmetic is exact (rational), not floating-point. Pass any
+non-integer value **as a string** so it stays exact and renders as a fraction —
+`"1/3"`, `"-3/4"`, both for `root` and inside `coefficients`. (Writing `1/3`
+directly would be evaluated to `0.333…` by Typst before the package sees it.)
+
+```typ
+#ruffini((2, -1, -1), "-1/2")   // divide by (x + 1/2); shows −1/2 as a fraction
+```
+
+**Variable.** The rendered labels use `x` by default; pass `variable: "t"` (or any
+letter) to write `C(t)`, `P(z)`, `(t − 2)`, …
+
 ## `ruffini(coefficients, root, ...)`
 
 One division `P(x) ÷ (x − root)`, rendered as the three-row tableau
@@ -44,9 +56,10 @@ One division `P(x) ÷ (x − root)`, rendered as the three-row tableau
 
 | Parameter             | Default      | Meaning |
 |-----------------------|--------------|---------|
-| `coefficients`        | *(required)* | Array, highest degree first, zeros included. |
-| `root`                | *(required)* | The `a` in `(x − a)`. Can be an integer or a decimal. |
+| `coefficients`        | *(required)* | Array, highest degree first, zeros included. Ints or string fractions (`"1/2"`). |
+| `root`                | *(required)* | The `a` in `(x − a)`. Int, or a string fraction like `"1/3"`. |
 | `lang`                | `"en"`       | Language of the rendered words: `"en"` or `"es"`. |
+| `variable`            | `"x"`        | The polynomial's variable in the rendered labels. |
 | `color`               | blue         | Accent color of the L-rule and the remainder box. |
 | `show-result`         | `true`       | Append the *Quotient / Remainder* line. |
 | `highlight-remainder` | `true`       | Draw the box around the remainder cell. |
@@ -60,8 +73,9 @@ factorization; otherwise it says so.
 | Parameter     | Default      | Meaning |
 |---------------|--------------|---------|
 | `coefficients`| *(required)* | Array, highest degree first, zeros included. |
-| `roots`       | *(required)* | The successive values `a` to divide by, in order. |
+| `roots`       | *(required)* | The successive values `a` to divide by, in order. Ints or string fractions. |
 | `lang`        | `"en"`       | `"en"` or `"es"`. |
+| `variable`    | `"x"`        | The polynomial's variable in the rendered labels. |
 | `color`       | blue         | Accent color of the rules. |
 | `show-result` | `true`       | Append the *Factorization* line. |
 | `highlight-remainder` | `true` | Box each division's remainder cell. |
@@ -77,7 +91,7 @@ factor of degree ≥ 2 remains, shows it in parentheses — e.g.
 | Exact division | Remainder `0`, boxed; quotient shown. |
 | **Nonzero remainder** | Boxed remainder; `R = …` in the result line. |
 | Missing terms | Handled via the explicit zero coefficients you pass. |
-| **Decimal / fractional root** | Works; numbers round to 2 decimals for display. |
+| **Fractional root / coefficients** | Exact rational arithmetic; rendered as fractions (pass them as strings). |
 | Leading coefficient ≠ 1 | Preserved through the staircase and in the factorization. |
 | **Irreducible quotient** | `ruffini-factor` stops and shows `(…)` for the remaining factor. |
 | Supplied value is not a root | `ruffini-factor` reports "not an exact division". |

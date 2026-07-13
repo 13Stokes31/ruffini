@@ -11,15 +11,18 @@ Known limits and possible improvements. Nothing here blocks ordinary use.
 - **Linear divisors only.** Ruffini's rule divides by `(x − a)`. Dividing by a
   higher-degree polynomial is ordinary long division — out of scope.
 
+## Done
+
+- **`variable` parameter** — the rendered labels can use `t`, `z`, … (v0.1.0).
+- **Exact fractions** — rational arithmetic throughout; rationals passed as
+  strings render as fractions (v0.1.0).
+
 ## Possible improvements (optional)
 
-- **A `variable` parameter** so the polynomial can be written in `t`, `z`, … as
-  well as `x`.
-- **Fraction display** for rational roots/coefficients (e.g. show `1/2` instead
-  of `0.5`), perhaps via an optional `frac: true`.
 - **More localization languages** in `_i18n` (currently `en`, `es`).
 - **A colored trail** joining each result to the product it feeds, as an optional
-  teaching aid for the "multiply–add" flow.
+  teaching aid for the "multiply–add" flow. (Diagonal ×root arrows + vertical sum
+  arrows, colored, showing where each number comes from.)
 - **Reference-image tests** (e.g. `tytanic`) beyond the compile-only battery in
   `tests/regression.typ`.
 

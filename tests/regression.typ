@@ -53,3 +53,25 @@
 
 // 12. factor + Spanish
 #ruffini-factor((1, -6, 11, -6), (1, 2, 3), lang: "es")
+#pagebreak()
+
+// -- fractions & variable ---------------------------------------------------
+
+// 13. fractional root as a string: 2x^2 - x - 1 ÷ (x + 1/2) → root "-1/2", R = 0
+#ruffini((2, -1, -1), "-1/2")
+#pagebreak()
+
+// 14. fractional coefficients: (1/2)x^2 - (1/3) with a nonzero remainder
+#ruffini(("1/2", 0, "-1/3"), 1)
+#pagebreak()
+
+// 15. factor with a fractional root: 2x^2 - x - 1 = 2(x + 1/2)(x - 1)
+#ruffini-factor((2, -1, -1), ("-1/2", 1))
+#pagebreak()
+
+// 16. custom variable `t`: C(t) = t^2, R = 1
+#ruffini((1, -2, 0, 1), 2, variable: "t")
+#pagebreak()
+
+// 17. factor with variable `z`
+#ruffini-factor((1, -6, 11, -6), (1, 2, 3), variable: "z")
