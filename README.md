@@ -64,6 +64,7 @@ factorization; otherwise it says so.
 | `lang`        | `"en"`       | `"en"` or `"es"`. |
 | `color`       | blue         | Accent color of the rules. |
 | `show-result` | `true`       | Append the *Factorization* line. |
+| `highlight-remainder` | `true` | Box each division's remainder cell. |
 
 The factorization keeps the leading coefficient correct and, when an irreducible
 factor of degree ≥ 2 remains, shows it in parentheses — e.g.

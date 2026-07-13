@@ -156,12 +156,14 @@
 /// - lang (str): `"en"` (default) or `"es"`.
 /// - color (color): accent color for the rules.
 /// - show-result (bool): append the factorization line (default `true`).
+/// - highlight-remainder (bool): box each division's remainder cell (default `true`).
 #let ruffini-factor(
   coefficients,
   roots,
   lang: "en",
   color: _blue,
   show-result: true,
+  highlight-remainder: true,
 ) = {
   assert(type(coefficients) == array and coefficients.len() >= 2,
     message: "ruffini-factor: `coefficients` must be an array of at least two numbers.")
@@ -181,7 +183,13 @@
     let (products, results) = _divide(current, r)
     cells += _pad((_mnum(r), []) + products.map(_mnum), width) // product row
     row += 1
-    cells += _pad(([],) + results.map(_mnum), width) // result row
+    let res-row = ([],) + results.enumerate().map(((i, b)) => {
+      let m = _mnum(b)
+      if highlight-remainder and i == results.len() - 1 {
+        table.cell(stroke: 0.7pt + color, m) // this division's remainder, boxed
+      } else { m }
+    })
+    cells += _pad(res-row, width) // result row
     hlines.push(table.hline(y: row, start: 0, end: L + 1, stroke: 0.7pt + color)) // under the root too
     row += 1
     remainders.push(results.at(-1))
