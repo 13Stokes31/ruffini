@@ -14,15 +14,17 @@ Known limits and possible improvements. Nothing here blocks ordinary use.
 ## Done
 
 - **`variable` parameter** — the rendered labels can use `t`, `z`, … (v0.1.0).
-- **Exact fractions** — rational arithmetic throughout; rationals passed as
-  strings render as fractions (v0.1.0).
+- **Exact fractions** — rational arithmetic throughout; ordinary fractions work as
+  bare numbers, unusual ones as strings (v0.1.0).
+- **Teaching trail** (`trail: true`) — overlaid bring-down / `×root` / column-sum
+  arrows, native (no CeTZ), showing how the algorithm works (v0.1.0).
 
 ## Possible improvements (optional)
 
 - **More localization languages** in `_i18n` (currently `en`, `es`).
-- **A colored trail** joining each result to the product it feeds, as an optional
-  teaching aid for the "multiply–add" flow. (Diagonal ×root arrows + vertical sum
-  arrows, colored, showing where each number comes from.)
+- **Trail for `ruffini-factor`** — the trail is currently on single divisions only.
+- **Trail + fractions** — the fixed-height trail cells can crowd tall fractions;
+  it is tuned for integer coefficients.
 - **Reference-image tests** (e.g. `tytanic`) beyond the compile-only battery in
   `tests/regression.typ`.
 

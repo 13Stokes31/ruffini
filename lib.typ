@@ -139,6 +139,17 @@
   r
 }
 
+// A placed arrow from (x1, y1) to (x2, y2) with a small two-stroke head at the
+// tip. Coordinates are lengths in the enclosing box's frame (y points down).
+// Native only — no CeTZ.
+#let _arrow(x1, y1, x2, y2, color) = {
+  let ang = calc.atan2((x2 - x1) / 1cm, (y2 - y1) / 1cm)
+  let L = 0.17cm
+  place(line(start: (x1, y1), end: (x2, y2), stroke: 0.9pt + color))
+  place(line(start: (x2, y2), end: (x2 + L * calc.cos(ang + 152deg), y2 + L * calc.sin(ang + 152deg)), stroke: 0.9pt + color))
+  place(line(start: (x2, y2), end: (x2 + L * calc.cos(ang - 152deg), y2 + L * calc.sin(ang - 152deg)), stroke: 0.9pt + color))
+}
+
 // One synthetic division of fraction `coeffs` by `(x - a)` (a a fraction).
 // Returns (products, results): `results` is the quotient's coefficients followed
 // by the remainder; `products.at(i)` sits under `coeffs.at(i + 1)`.
@@ -176,6 +187,9 @@
 /// - color (color): accent color for the rule and the remainder box.
 /// - show-result (bool): append the "quotient / remainder" line (default `true`).
 /// - highlight-remainder (bool): box the remainder cell (default `true`).
+/// - trail (bool): overlay teaching arrows — bring-down, `×root` diagonals and
+///   column `+` sums — that show HOW the algorithm works (default `false`). Meant
+///   for explaining the method; best with integer coefficients.
 #let ruffini(
   coefficients,
   root,
@@ -184,6 +198,7 @@
   color: _blue,
   show-result: true,
   highlight-remainder: true,
+  trail: false,
 ) = {
   assert(type(coefficients) == array and coefficients.len() >= 2,
     message: "ruffini: `coefficients` must be an array of at least two numbers (highest degree first).")
@@ -208,17 +223,55 @@
   })
   row-res = _pad(row-res, width)
 
-  align(center, table(
-    columns: width,
-    align: center + horizon,
-    inset: 6pt,
-    stroke: none,
-    ..row-coeffs,
-    ..row-prod,
-    ..row-res,
-    table.vline(x: 1, stroke: 0.7pt + color),
-    table.hline(y: 2, start: 0, stroke: 0.7pt + color), // runs under the root too
-  ))
+  if trail {
+    // fixed-size table + an overlay of arrows showing the "bring down · multiply
+    // by the root · add the column" flow.
+    let cw = 1.6cm
+    let ch = 1.15cm
+    let xc(c) = (c + 0.5) * cw
+    let yc(r) = (r + 0.5) * ch
+    let tbl = table(
+      columns: (cw,) * width,
+      rows: ch,
+      align: center + horizon,
+      inset: 4pt,
+      stroke: none,
+      ..row-coeffs,
+      ..row-prod,
+      ..row-res,
+      table.vline(x: 1, stroke: 0.7pt + color),
+      table.hline(y: 2, start: 0, stroke: 0.7pt + color),
+    )
+    align(center, box(width: width * cw, height: 3 * ch, {
+      place(top + left, tbl)
+      // bring-down: c0 → b0 (straight down the first coefficient column)
+      _arrow(xc(1), yc(0) + 0.34 * ch, xc(1), yc(2) - 0.34 * ch, color.lighten(25%))
+      // multiply: each result b_j → its product a·b_j one column up-right, "×a"
+      for j in range(products.len()) {
+        let sx = xc(j + 1); let sy = yc(2)
+        let ex = xc(j + 2); let ey = yc(1)
+        let ux = ex - sx; let uy = ey - sy
+        _arrow(sx + 0.30 * ux, sy + 0.30 * uy, ex - 0.30 * ux, ey - 0.30 * uy, color)
+        place(dx: (sx + ex) / 2 + 0.02cm, dy: (sy + ey) / 2 - 0.66cm, text(0.68em, fill: color, weight: "bold")[×#_fnum(a)])
+      }
+      // add: each column below the rule sums into the result ("+")
+      for c in range(2, width) {
+        place(dx: xc(c) - 0.13cm, dy: 2 * ch - 0.01cm, text(0.8em, fill: color.lighten(10%))[$+$])
+      }
+    }))
+  } else {
+    align(center, table(
+      columns: width,
+      align: center + horizon,
+      inset: 6pt,
+      stroke: none,
+      ..row-coeffs,
+      ..row-prod,
+      ..row-res,
+      table.vline(x: 1, stroke: 0.7pt + color),
+      table.hline(y: 2, start: 0, stroke: 0.7pt + color), // runs under the root too
+    ))
+  }
 
   if show-result {
     align(center, block(above: 8pt, [

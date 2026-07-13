@@ -88,6 +88,22 @@ One division `P(x) ÷ (x − root)`, rendered as the three-row tableau
 | `color`               | blue         | Accent color of the L-rule and the remainder box. |
 | `show-result`         | `true`       | Append the *Quotient / Remainder* line. |
 | `highlight-remainder` | `true`       | Draw the box around the remainder cell. |
+| `trail`               | `false`      | Overlay teaching arrows (see below). |
+
+### Explaining the algorithm (`trail`)
+
+`trail: true` overlays the arrows that show *how* synthetic division works —
+**bring the first coefficient down**, **multiply by the root** (the `×a`
+diagonals), **add the column** (the `+` signs) — so it doubles as a lecture
+figure. Drawn natively (no CeTZ). Best with integer coefficients.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/13Stokes31/ruffini/main/gallery/g5.png" width="60%" alt="Teaching trail: bring down, multiply by the root, add the column">
+</p>
+
+```typ
+#ruffini((1, -2, 0, 1), 2, trail: true)
+```
 
 ## `ruffini-factor(coefficients, roots, ...)`
 

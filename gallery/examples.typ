@@ -18,3 +18,8 @@
 
 // g4 — Spanish labels
 #ruffini((1, 0, -3, 0, 2), -1, lang: "es", color: rgb("#2b8a3e"))
+#pagebreak()
+
+// g5 — teaching trail: bring down · multiply by the root · add the column
+#set page(width: auto)
+#ruffini((1, -2, 0, 1), 2, trail: true)

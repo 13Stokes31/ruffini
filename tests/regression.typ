@@ -85,3 +85,13 @@
 #ruffini((1, 0, -3), "1/99991", highlight-remainder: false)
 // NOTE: `#ruffini((1, 0, -3), 1/99991)` (bare) is EXPECTED to error, on purpose —
 // the denominator is too large to recover from a float; use the string form.
+#pagebreak()
+
+// -- teaching trail ---------------------------------------------------------
+
+// 20. trail: arrows for bring-down / ×root / column sums
+#ruffini((1, -2, 0, 1), 2, trail: true)
+#pagebreak()
+
+// 21. trail on a longer polynomial, color + Spanish
+#ruffini((1, -6, 11, -6), 1, trail: true, color: rgb("#2b8a3e"), lang: "es")

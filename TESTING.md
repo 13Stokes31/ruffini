@@ -36,6 +36,11 @@ Then check, page by page:
 - [ ] **Factor with a fractional root** — `P(x) = 2(x + ½)(x − 1)`.
 - [ ] **Custom variable** (`variable: "t"` / `"z"`) — `C(t)`, `P(z)` and the
   factors use the given letter.
+- [ ] **Trail** (`trail: true`) — one vertical bring-down arrow on the first
+  column; a `×root` diagonal from each result up to its product; a `+` under the
+  rule in each summed column. Arrows line up with the cells; nothing overflows.
+- [ ] **Trail + color + Spanish** — arrows and labels take the color; the result
+  line is in Spanish.
 
 ## Gallery
 
