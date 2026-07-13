@@ -122,7 +122,7 @@
   let row-res = ([],) + results.enumerate().map(((i, b)) => {
     let m = _mnum(b)
     if highlight-remainder and i == results.len() - 1 {
-      box(stroke: 0.7pt + color, inset: (x: 5pt, y: 3pt), radius: 2pt, m)
+      table.cell(stroke: 0.7pt + color, m) // remainder cell, boxed by the table itself
     } else { m }
   })
   row-res = _pad(row-res, width)
@@ -136,7 +136,7 @@
     ..row-prod,
     ..row-res,
     table.vline(x: 1, stroke: 0.7pt + color),
-    table.hline(y: 2, start: 1, stroke: 0.7pt + color),
+    table.hline(y: 2, start: 0, stroke: 0.7pt + color), // runs under the root too
   ))
 
   if show-result {
@@ -182,7 +182,7 @@
     cells += _pad((_mnum(r), []) + products.map(_mnum), width) // product row
     row += 1
     cells += _pad(([],) + results.map(_mnum), width) // result row
-    hlines.push(table.hline(y: row, start: 1, end: L + 1, stroke: 0.7pt + color))
+    hlines.push(table.hline(y: row, start: 0, end: L + 1, stroke: 0.7pt + color)) // under the root too
     row += 1
     remainders.push(results.at(-1))
     current = results.slice(0, -1)
