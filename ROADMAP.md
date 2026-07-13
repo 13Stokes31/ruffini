@@ -25,14 +25,6 @@ Known limits and possible improvements. Nothing here blocks ordinary use.
 - **Trail for `ruffini-factor`** — the trail is currently on single divisions only.
 - **Trail + fractions** — the fixed-height trail cells can crowd tall fractions;
   it is tuned for integer coefficients.
-- **Visual-regression (reference-image) tests.** Today `tests/regression.typ`
-  only checks that everything *compiles*; the gallery PNGs are regenerated and
-  eyeballed by hand (see `TESTING.md`). A reference-image harness (e.g.
-  [`tytanic`](https://github.com/tingerrr/tytanic)) would store an approved image
-  per case and fail CI when the rendered output drifts — catching, automatically,
-  a moved arrow, a lost box or a misaligned fraction that a compile-only test
-  cannot see. Steps: add `tytanic`, snapshot the current cases as references, wire
-  it into a GitHub Action.
 
 ## Before publishing to Typst Universe
 
